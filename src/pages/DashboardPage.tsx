@@ -47,30 +47,6 @@ export default function DashboardPage() {
     }
   ]
 
-  const recentAudits = [
-    {
-      project: "E-commerce App",
-      status: "completed" as const,
-      score: 92,
-      date: "Il y a 2h",
-      vulnerabilities: 3
-    },
-    {
-      project: "API Gateway",
-      status: "in-progress" as const,
-      score: null,
-      date: "En cours",
-      vulnerabilities: null
-    },
-    {
-      project: "Mobile App",
-      status: "completed" as const,
-      score: 87,
-      date: "Hier",
-      vulnerabilities: 5
-    }
-  ]
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -96,7 +72,7 @@ export default function DashboardPage() {
 
         {/* Recent Audits and Quick Actions */}
         <div className="grid gap-6 md:grid-cols-2">
-          <RecentAudits audits={recentAudits} />
+          <RecentAudits />
           <QuickActions />
         </div>
       </div>
