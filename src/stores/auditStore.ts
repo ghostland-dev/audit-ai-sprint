@@ -1,4 +1,3 @@
-
 import { create } from 'zustand'
 import { supabase } from '@/integrations/supabase/client'
 
@@ -71,6 +70,7 @@ const transformStoreAudit = (audit: Omit<Audit, 'id' | 'status' | 'createdAt' | 
   branch: audit.branch,
   audit_type: audit.auditType,
   description: audit.description,
+  user_id: null // Set to null temporarily until auth is implemented
 })
 
 // Simulation d'analyse de code
@@ -156,15 +156,7 @@ export const useAuditStore = create<AuditStore>((set, get) => ({
     set({ isLoading: true, error: null })
     
     try {
-      const { data: user } = await supabase.auth.getUser()
-      if (!user.user) {
-        throw new Error('Vous devez être connecté pour créer un audit')
-      }
-
-      const dbAudit = {
-        ...transformStoreAudit(auditData),
-        user_id: user.user.id
-      }
+      const dbAudit = transformStoreAudit(auditData)
 
       const { data, error } = await supabase
         .from('audits')
@@ -326,3 +318,54 @@ export const useAuditStore = create<AuditStore>((set, get) => ({
     set({ error: null })
   }
 }))
+
+// Simulation d'analyse de code
+const simulateCodeAnalysis = async (): Promise<AuditResult[]> => {
+  // Simuler un délai d'analyse
+  await new Promise(resolve => setTimeout(resolve, Math.random() * 5000 + 2000))
+  
+  const mockResults: AuditResult[] = []
+  const fileTypes = ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.php']
+  const severities: AuditResult['severity'][] = ['low', 'medium', 'high', 'critical']
+  const types: AuditResult['type'][] = ['security', 'performance', 'quality', 'bug']
+  
+  const numIssues = Math.floor(Math.random() * 20) + 1
+  
+  for (let i = 0; i < numIssues; i++) {
+    mockResults.push({
+      id: `issue-${i}`,
+      type: types[Math.floor(Math.random() * types.length)],
+      severity: severities[Math.floor(Math.random() * severities.length)],
+      message: `Issue détectée dans le code: ${['Vulnérabilité XSS détectée', 'Performance dégradée', 'Code dupliqué', 'Variable non utilisée', 'Fonction trop complexe'][Math.floor(Math.random() * 5)]}`,
+      file: `src/components/Component${i}${fileTypes[Math.floor(Math.random() * fileTypes.length)]}`,
+      line: Math.floor(Math.random() * 100) + 1,
+      column: Math.floor(Math.random() * 50) + 1,
+      rule: `rule-${Math.floor(Math.random() * 100)}`,
+      suggestion: 'Corriger ce problème en appliquant les bonnes pratiques de sécurité'
+    })
+  }
+  
+  return mockResults
+}
+
+const calculateSeverity = (results: AuditResult[]): 'low' | 'medium' | 'high' => {
+  const criticalCount = results.filter(r => r.severity === 'critical').length
+  const highCount = results.filter(r => r.severity === 'high').length
+  
+  if (criticalCount > 0 || highCount > 3) return 'high'
+  if (highCount > 0 || results.filter(r => r.severity === 'medium').length > 5) return 'medium'
+  return 'low'
+}
+
+const calculateScore = (results: AuditResult[]): number => {
+  let score = 100
+  results.forEach(result => {
+    switch (result.severity) {
+      case 'critical': score -= 10; break
+      case 'high': score -= 5; break
+      case 'medium': score -= 2; break
+      case 'low': score -= 1; break
+    }
+  })
+  return Math.max(score, 0)
+}
