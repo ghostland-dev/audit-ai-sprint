@@ -1,5 +1,5 @@
 
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate, useLocation } from "react-router-dom"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, Download, RefreshCw, Shield, AlertTriangle, Bug, Zap } from "lucide-react"
 import { useAuditStore } from "@/stores/auditStore"
 import { toast } from "@/hooks/use-toast"
+import { useEffect } from "react"
 
 const getSeverityBadge = (severity: string) => {
   switch (severity) {
@@ -41,17 +42,51 @@ const getTypeIcon = (type: string) => {
 }
 
 export default function AuditDetailPage() {
-  const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { getAuditById, runAudit } = useAuditStore()
+  const location = useLocation()
   
-  const audit = id ? getAuditById(id) : null
+  // Add safety check for params
+  let params
+  try {
+    params = useParams<{ id: string }>()
+  } catch (error) {
+    console.error("Error getting params:", error)
+    // Fallback: try to extract ID from pathname
+    const pathParts = location.pathname.split('/')
+    const idFromPath = pathParts[pathParts.length - 1]
+    params = { id: idFromPath }
+  }
+  
+  const { getAuditById, runAudit, fetchAudits } = useAuditStore()
+  
+  // Ensure we have fetched audits
+  useEffect(() => {
+    fetchAudits()
+  }, [fetchAudits])
+  
+  const audit = params?.id ? getAuditById(params.id) : null
+
+  if (!params?.id) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center h-64">
+          <h2 className="text-2xl font-bold mb-4">ID d'audit manquant</h2>
+          <Button onClick={() => navigate("/audits")}>
+            Retour aux audits
+          </Button>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   if (!audit) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-64">
           <h2 className="text-2xl font-bold mb-4">Audit non trouvé</h2>
+          <p className="text-muted-foreground mb-4">
+            L'audit avec l'ID {params.id} n'existe pas ou n'a pas encore été chargé.
+          </p>
           <Button onClick={() => navigate("/audits")}>
             Retour aux audits
           </Button>
