@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
+import DashboardPage from "./pages/DashboardPage";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -20,15 +20,15 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/projects" element={<Dashboard />} />
-          <Route path="/audits" element={<Dashboard />} />
-          <Route path="/reports" element={<Dashboard />} />
-          <Route path="/analytics" element={<Dashboard />} />
-          <Route path="/team" element={<Dashboard />} />
-          <Route path="/billing" element={<Dashboard />} />
-          <Route path="/settings" element={<Dashboard />} />
-          <Route path="/support" element={<Dashboard />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/projects" element={<DashboardPage />} />
+          <Route path="/audits" element={<DashboardPage />} />
+          <Route path="/reports" element={<DashboardPage />} />
+          <Route path="/analytics" element={<DashboardPage />} />
+          <Route path="/team" element={<DashboardPage />} />
+          <Route path="/billing" element={<DashboardPage />} />
+          <Route path="/settings" element={<DashboardPage />} />
+          <Route path="/support" element={<DashboardPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

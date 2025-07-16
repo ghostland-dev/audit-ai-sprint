@@ -1,5 +1,4 @@
 
-import { useState } from "react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
   BarChart3,
@@ -23,8 +22,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
-  useSidebar,
 } from "@/components/ui/sidebar"
 
 const mainItems = [
@@ -43,39 +40,23 @@ const settingsItems = [
 ]
 
 export function AppSidebar() {
-  const { collapsed } = useSidebar()
   const location = useLocation()
   const currentPath = location.pathname
 
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + "/")
-  const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive 
-      ? "bg-gradient-to-r from-purple-500/10 to-blue-500/10 text-purple-600 border-r-2 border-purple-500 font-medium" 
-      : "hover:bg-muted/50 transition-colors"
 
   return (
-    <Sidebar
-      className={collapsed ? "w-14" : "w-64"}
-      collapsible
-    >
+    <Sidebar className="w-64">
       <div className="p-4 border-b">
-        {!collapsed ? (
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold">DevAudit AI</h2>
-              <p className="text-xs text-muted-foreground">Audit de code intelligent</p>
-            </div>
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg">
+            <Zap className="w-5 h-5 text-white" />
           </div>
-        ) : (
-          <div className="flex justify-center">
-            <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
+          <div>
+            <h2 className="text-lg font-bold">DevAudit AI</h2>
+            <p className="text-xs text-muted-foreground">Audit de code intelligent</p>
           </div>
-        )}
+        </div>
       </div>
 
       <SidebarContent>
@@ -86,9 +67,16 @@ export function AppSidebar() {
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavCls}>
+                    <NavLink 
+                      to={item.url} 
+                      className={({ isActive }) =>
+                        isActive 
+                          ? "bg-gradient-to-r from-purple-500/10 to-blue-500/10 text-purple-600 border-r-2 border-purple-500 font-medium" 
+                          : "hover:bg-muted/50 transition-colors"
+                      }
+                    >
                       <item.icon className="mr-3 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -104,9 +92,16 @@ export function AppSidebar() {
               {settingsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavCls}>
+                    <NavLink 
+                      to={item.url}
+                      className={({ isActive }) =>
+                        isActive 
+                          ? "bg-gradient-to-r from-purple-500/10 to-blue-500/10 text-purple-600 border-r-2 border-purple-500 font-medium" 
+                          : "hover:bg-muted/50 transition-colors"
+                      }
+                    >
                       <item.icon className="mr-3 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
