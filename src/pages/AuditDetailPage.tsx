@@ -41,21 +41,11 @@ const getTypeIcon = (type: string) => {
   }
 }
 
-export default function AuditDetailPage() {
+// Create a wrapper component to handle Router context safely
+function AuditDetailPageContent() {
   const navigate = useNavigate()
   const location = useLocation()
-  
-  // Add safety check for params
-  let params
-  try {
-    params = useParams<{ id: string }>()
-  } catch (error) {
-    console.error("Error getting params:", error)
-    // Fallback: try to extract ID from pathname
-    const pathParts = location.pathname.split('/')
-    const idFromPath = pathParts[pathParts.length - 1]
-    params = { id: idFromPath }
-  }
+  const { id } = useParams<{ id: string }>()
   
   const { getAuditById, runAudit, fetchAudits } = useAuditStore()
   
@@ -64,9 +54,9 @@ export default function AuditDetailPage() {
     fetchAudits()
   }, [fetchAudits])
   
-  const audit = params?.id ? getAuditById(params.id) : null
+  const audit = id ? getAuditById(id) : null
 
-  if (!params?.id) {
+  if (!id) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-64">
@@ -85,7 +75,7 @@ export default function AuditDetailPage() {
         <div className="flex flex-col items-center justify-center h-64">
           <h2 className="text-2xl font-bold mb-4">Audit non trouvé</h2>
           <p className="text-muted-foreground mb-4">
-            L'audit avec l'ID {params.id} n'existe pas ou n'a pas encore été chargé.
+            L'audit avec l'ID {id} n'existe pas ou n'a pas encore été chargé.
           </p>
           <Button onClick={() => navigate("/audits")}>
             Retour aux audits
@@ -302,4 +292,26 @@ export default function AuditDetailPage() {
       </div>
     </DashboardLayout>
   )
+}
+
+// Main export component with error boundary
+export default function AuditDetailPage() {
+  try {
+    return <AuditDetailPageContent />
+  } catch (error) {
+    console.error("Error in AuditDetailPage:", error)
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center h-64">
+          <h2 className="text-2xl font-bold mb-4">Erreur de chargement</h2>
+          <p className="text-muted-foreground mb-4">
+            Une erreur s'est produite lors du chargement de la page.
+          </p>
+          <Button onClick={() => window.location.href = "/audits"}>
+            Retour aux audits
+          </Button>
+        </div>
+      </DashboardLayout>
+    )
+  }
 }
