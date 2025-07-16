@@ -1,11 +1,13 @@
 
+import { useState } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { GitBranch, Calendar, AlertCircle, CheckCircle, Clock } from "lucide-react"
+import { NewProjectForm } from "@/components/projects/NewProjectForm"
+import { GitBranch, Calendar, AlertCircle, CheckCircle, Clock, Plus } from "lucide-react"
 
-const projects = [
+const initialProjects = [
   {
     id: 1,
     name: "E-commerce Frontend",
@@ -49,6 +51,27 @@ const getStatusBadge = (status: string) => {
 }
 
 export default function ProjectsPage() {
+  const [projects, setProjects] = useState(initialProjects)
+  const [showNewForm, setShowNewForm] = useState(false)
+
+  const handleNewProject = (newProject: any) => {
+    setProjects([...projects, newProject])
+    setShowNewForm(false)
+  }
+
+  if (showNewForm) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <NewProjectForm 
+            onSubmit={handleNewProject}
+            onCancel={() => setShowNewForm(false)}
+          />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -57,8 +80,8 @@ export default function ProjectsPage() {
             <h1 className="text-3xl font-bold">Projets</h1>
             <p className="text-muted-foreground">Gérez vos projets et leurs audits de code</p>
           </div>
-          <Button>
-            <GitBranch className="w-4 h-4 mr-2" />
+          <Button onClick={() => setShowNewForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
             Nouveau Projet
           </Button>
         </div>
@@ -75,10 +98,12 @@ export default function ProjectsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Dernier audit : {project.lastAudit}
-                  </div>
+                  {project.lastAudit && (
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Dernier audit : {project.lastAudit}
+                    </div>
+                  )}
                   
                   <div className="flex justify-between text-sm">
                     <span className="flex items-center text-red-600">
