@@ -1,10 +1,12 @@
 
+import { useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { Button } from "@/components/ui/button"
 import { StatsGrid } from "@/components/dashboard/StatsGrid"
 import { RecentAudits } from "@/components/dashboard/RecentAudits"
 import { QuickActions } from "@/components/dashboard/QuickActions"
 import { useNavigate } from "react-router-dom"
+import { useAuditStore } from "@/stores/auditStore"
 import { 
   Shield, 
   GitBranch, 
@@ -15,33 +17,40 @@ import {
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const { audits, fetchAudits } = useAuditStore()
+
+  useEffect(() => {
+    fetchAudits()
+  }, [])
 
   const stats = [
     {
       title: "Projets actifs",
-      value: "12",
-      description: "+2 ce mois",
+      value: new Set(audits.map(a => a.projectName)).size.toString(),
+      description: `${audits.length} audits au total`,
       icon: GitBranch,
       trend: "up" as const
     },
     {
       title: "Audits réalisés",
-      value: "245",
-      description: "+15 cette semaine",
+      value: audits.filter(a => a.status === 'completed').length.toString(),
+      description: `${audits.filter(a => a.status === 'running').length} en cours`,
       icon: Shield,
       trend: "up" as const
     },
     {
       title: "Vulnérabilités détectées",
-      value: "8",
-      description: "Niveau critique: 2",
+      value: audits.reduce((sum, audit) => sum + audit.issues, 0).toString(),
+      description: `${audits.filter(a => a.severity === 'high').length} critiques`,
       icon: AlertTriangle,
       trend: "down" as const
     },
     {
       title: "Taux de réussite",
-      value: "94%",
-      description: "+3% vs mois dernier",
+      value: audits.filter(a => a.score).length > 0 
+        ? `${Math.round(audits.filter(a => a.score).reduce((sum, audit) => sum + (audit.score || 0), 0) / audits.filter(a => a.score).length)}%`
+        : "N/A",
+      description: "Score moyen global",
       icon: CheckCircle,
       trend: "up" as const
     }

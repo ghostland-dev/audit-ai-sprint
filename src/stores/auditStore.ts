@@ -1,5 +1,6 @@
 
 import { create } from 'zustand'
+import { supabase } from '@/integrations/supabase/client'
 
 export interface Audit {
   id: string
@@ -37,15 +38,43 @@ interface AuditStore {
   currentAudit: Audit | null
   
   // Actions
+  fetchAudits: () => Promise<void>
   createAudit: (auditData: Omit<Audit, 'id' | 'status' | 'createdAt' | 'issues' | 'severity'>) => Promise<string>
   runAudit: (auditId: string) => Promise<void>
   getAuditById: (id: string) => Audit | undefined
-  deleteAudit: (id: string) => void
+  deleteAudit: (id: string) => Promise<void>
   clearError: () => void
 }
 
+// Transform database audit to store audit
+const transformDbAudit = (dbAudit: any): Audit => ({
+  id: dbAudit.id,
+  projectName: dbAudit.project_name,
+  repository: dbAudit.repository,
+  branch: dbAudit.branch,
+  auditType: dbAudit.audit_type,
+  description: dbAudit.description,
+  status: dbAudit.status,
+  createdAt: dbAudit.created_at,
+  completedAt: dbAudit.completed_at,
+  duration: dbAudit.duration,
+  issues: dbAudit.issues,
+  severity: dbAudit.severity,
+  score: dbAudit.score,
+  results: []
+})
+
+// Transform store audit to database audit
+const transformStoreAudit = (audit: Omit<Audit, 'id' | 'status' | 'createdAt' | 'issues' | 'severity'>) => ({
+  project_name: audit.projectName,
+  repository: audit.repository,
+  branch: audit.branch,
+  audit_type: audit.auditType,
+  description: audit.description,
+})
+
 // Simulation d'analyse de code
-const simulateCodeAnalysis = async (audit: Omit<Audit, 'id' | 'status' | 'createdAt' | 'issues' | 'severity'>): Promise<AuditResult[]> => {
+const simulateCodeAnalysis = async (): Promise<AuditResult[]> => {
   // Simuler un délai d'analyse
   await new Promise(resolve => setTimeout(resolve, Math.random() * 5000 + 2000))
   
@@ -96,70 +125,56 @@ const calculateScore = (results: AuditResult[]): number => {
 }
 
 export const useAuditStore = create<AuditStore>((set, get) => ({
-  audits: [
-    {
-      id: '1',
-      projectName: 'E-commerce Frontend',
-      repository: 'https://github.com/example/ecommerce',
-      branch: 'main',
-      auditType: 'complete',
-      description: 'Audit complet du frontend e-commerce',
-      status: 'completed',
-      createdAt: '2024-01-15T10:00:00Z',
-      completedAt: '2024-01-15T10:15:00Z',
-      duration: '15 min',
-      issues: 12,
-      severity: 'high',
-      score: 85,
-      results: []
-    },
-    {
-      id: '2',
-      projectName: 'API Backend',
-      repository: 'https://github.com/example/api',
-      branch: 'develop',
-      auditType: 'security',
-      description: 'Audit de sécurité de l\'API',
-      status: 'running',
-      createdAt: '2024-01-14T14:30:00Z',
-      duration: '8 min',
-      issues: 8,
-      severity: 'medium',
-      results: []
-    },
-    {
-      id: '3',
-      projectName: 'Mobile App',
-      repository: 'https://github.com/example/mobile',
-      branch: 'main',
-      auditType: 'quality',
-      description: 'Audit qualité du code mobile',
-      status: 'completed',
-      createdAt: '2024-01-12T16:20:00Z',
-      completedAt: '2024-01-12T16:32:00Z',
-      duration: '12 min',
-      issues: 3,
-      severity: 'low',
-      score: 92,
-      results: []
-    }
-  ],
+  audits: [],
   isLoading: false,
   error: null,
   currentAudit: null,
+
+  fetchAudits: async () => {
+    set({ isLoading: true, error: null })
+    
+    try {
+      const { data: auditsData, error } = await supabase
+        .from('audits')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      const audits = auditsData?.map(transformDbAudit) || []
+      set({ audits, isLoading: false })
+    } catch (error) {
+      console.error('Error fetching audits:', error)
+      set({ 
+        error: error instanceof Error ? error.message : 'Erreur lors du chargement des audits',
+        isLoading: false 
+      })
+    }
+  },
 
   createAudit: async (auditData) => {
     set({ isLoading: true, error: null })
     
     try {
-      const newAudit: Audit = {
-        ...auditData,
-        id: Date.now().toString(),
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        issues: 0,
-        severity: 'low'
+      const { data: user } = await supabase.auth.getUser()
+      if (!user.user) {
+        throw new Error('Vous devez être connecté pour créer un audit')
       }
+
+      const dbAudit = {
+        ...transformStoreAudit(auditData),
+        user_id: user.user.id
+      }
+
+      const { data, error } = await supabase
+        .from('audits')
+        .insert([dbAudit])
+        .select()
+        .single()
+
+      if (error) throw error
+
+      const newAudit = transformDbAudit(data)
       
       set(state => ({
         audits: [newAudit, ...state.audits],
@@ -173,6 +188,7 @@ export const useAuditStore = create<AuditStore>((set, get) => ({
       
       return newAudit.id
     } catch (error) {
+      console.error('Error creating audit:', error)
       set({ 
         error: error instanceof Error ? error.message : 'Erreur lors de la création de l\'audit',
         isLoading: false 
@@ -185,24 +201,67 @@ export const useAuditStore = create<AuditStore>((set, get) => ({
     const audit = get().audits.find(a => a.id === auditId)
     if (!audit) return
     
-    // Mettre l'audit en cours d'exécution
-    set(state => ({
-      audits: state.audits.map(a => 
-        a.id === auditId 
-          ? { ...a, status: 'running' as const }
-          : a
-      )
-    }))
-    
     try {
+      // Mettre l'audit en cours d'exécution
+      const { error: updateError } = await supabase
+        .from('audits')
+        .update({ status: 'running' })
+        .eq('id', auditId)
+
+      if (updateError) throw updateError
+
+      set(state => ({
+        audits: state.audits.map(a => 
+          a.id === auditId 
+            ? { ...a, status: 'running' as const }
+            : a
+        )
+      }))
+      
       const startTime = Date.now()
-      const results = await simulateCodeAnalysis(audit)
+      const results = await simulateCodeAnalysis()
       const endTime = Date.now()
       const duration = Math.round((endTime - startTime) / 1000)
       
       const severity = calculateSeverity(results)
       const score = calculateScore(results)
       
+      // Mettre à jour l'audit avec les résultats
+      const { error: finalUpdateError } = await supabase
+        .from('audits')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          duration: `${Math.floor(duration / 60)}m ${duration % 60}s`,
+          issues: results.length,
+          severity,
+          score
+        })
+        .eq('id', auditId)
+
+      if (finalUpdateError) throw finalUpdateError
+
+      // Insérer les résultats d'audit
+      if (results.length > 0) {
+        const auditResults = results.map(result => ({
+          audit_id: auditId,
+          type: result.type,
+          severity: result.severity,
+          message: result.message,
+          file: result.file,
+          line: result.line,
+          column_number: result.column,
+          rule: result.rule,
+          suggestion: result.suggestion
+        }))
+
+        const { error: resultsError } = await supabase
+          .from('audit_results')
+          .insert(auditResults)
+
+        if (resultsError) throw resultsError
+      }
+
       set(state => ({
         audits: state.audits.map(a => 
           a.id === auditId 
@@ -220,6 +279,14 @@ export const useAuditStore = create<AuditStore>((set, get) => ({
         )
       }))
     } catch (error) {
+      console.error('Error running audit:', error)
+      
+      // Marquer l'audit comme échoué
+      await supabase
+        .from('audits')
+        .update({ status: 'failed' })
+        .eq('id', auditId)
+
       set(state => ({
         audits: state.audits.map(a => 
           a.id === auditId 
@@ -235,10 +302,24 @@ export const useAuditStore = create<AuditStore>((set, get) => ({
     return get().audits.find(audit => audit.id === id)
   },
 
-  deleteAudit: (id) => {
-    set(state => ({
-      audits: state.audits.filter(audit => audit.id !== id)
-    }))
+  deleteAudit: async (id) => {
+    try {
+      const { error } = await supabase
+        .from('audits')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      set(state => ({
+        audits: state.audits.filter(audit => audit.id !== id)
+      }))
+    } catch (error) {
+      console.error('Error deleting audit:', error)
+      set({ 
+        error: error instanceof Error ? error.message : 'Erreur lors de la suppression de l\'audit'
+      })
+    }
   },
 
   clearError: () => {

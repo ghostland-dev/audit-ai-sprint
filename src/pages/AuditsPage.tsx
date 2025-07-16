@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Shield, Play, FileText, Calendar, AlertTriangle, Trash2, Eye } from "lucide-react"
+import { Shield, Play, FileText, Calendar, AlertTriangle, Trash2, Eye, Loader2 } from "lucide-react"
 import { useAuditStore } from "@/stores/auditStore"
 import { toast } from "@/hooks/use-toast"
 
@@ -40,11 +40,26 @@ const getStatusBadge = (status: string) => {
 
 export default function AuditsPage() {
   const navigate = useNavigate()
-  const { audits, deleteAudit } = useAuditStore()
+  const { audits, isLoading, error, deleteAudit, fetchAudits, clearError } = useAuditStore()
 
-  const handleDelete = (auditId: string, auditName: string) => {
+  useEffect(() => {
+    fetchAudits()
+  }, [])
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: error,
+        variant: "destructive"
+      })
+      clearError()
+    }
+  }, [error, clearError])
+
+  const handleDelete = async (auditId: string, auditName: string) => {
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer l'audit "${auditName}" ?`)) {
-      deleteAudit(auditId)
+      await deleteAudit(auditId)
       toast({
         title: "Audit supprimé",
         description: `L'audit "${auditName}" a été supprimé avec succès`
@@ -61,6 +76,17 @@ export default function AuditsPage() {
     averageScore: audits.filter(a => a.score).length > 0 
       ? Math.round(audits.filter(a => a.score).reduce((sum, audit) => sum + (audit.score || 0), 0) / audits.filter(a => a.score).length)
       : 0
+  }
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Chargement des audits...</span>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (

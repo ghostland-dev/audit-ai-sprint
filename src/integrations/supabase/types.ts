@@ -14,7 +14,137 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_results: {
+        Row: {
+          audit_id: string
+          column_number: number | null
+          created_at: string
+          file: string
+          id: string
+          line: number | null
+          message: string
+          rule: string | null
+          severity: string
+          suggestion: string | null
+          type: string
+        }
+        Insert: {
+          audit_id: string
+          column_number?: number | null
+          created_at?: string
+          file: string
+          id?: string
+          line?: number | null
+          message: string
+          rule?: string | null
+          severity: string
+          suggestion?: string | null
+          type: string
+        }
+        Update: {
+          audit_id?: string
+          column_number?: number | null
+          created_at?: string
+          file?: string
+          id?: string
+          line?: number | null
+          message?: string
+          rule?: string | null
+          severity?: string
+          suggestion?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_results_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audits: {
+        Row: {
+          audit_type: string
+          branch: string
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          duration: string | null
+          id: string
+          issues: number
+          project_name: string
+          repository: string
+          score: number | null
+          severity: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          audit_type: string
+          branch?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          id?: string
+          issues?: number
+          project_name: string
+          repository: string
+          score?: number | null
+          severity?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          audit_type?: string
+          branch?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          id?: string
+          issues?: number
+          project_name?: string
+          repository?: string
+          score?: number | null
+          severity?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      wrapper: {
+        Row: {
+          attrs: Json | null
+          currency: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          customer: string | null
+          id: string | null
+        }
+        Insert: {
+          attrs?: Json | null
+          currency?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          customer?: string | null
+          id?: string | null
+        }
+        Update: {
+          attrs?: Json | null
+          currency?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          customer?: string | null
+          id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
