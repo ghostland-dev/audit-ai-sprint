@@ -1,5 +1,6 @@
 
 import { NavLink, useLocation } from "react-router-dom"
+import { useEffect, useState } from "react"
 import {
   BarChart3,
   FileText,
@@ -40,10 +41,45 @@ const settingsItems = [
 ]
 
 export function AppSidebar() {
-  const location = useLocation()
-  const currentPath = location.pathname
+  const [isRouterReady, setIsRouterReady] = useState(false)
+  
+  // Try to get location to check if router context is available
+  let location
+  try {
+    location = useLocation()
+    if (!isRouterReady) {
+      setIsRouterReady(true)
+    }
+  } catch (error) {
+    // Router context not available yet
+    console.log("Router context not ready yet")
+  }
 
-  const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + "/")
+  const currentPath = location?.pathname || ""
+
+  // Don't render navigation links until router is ready
+  if (!isRouterReady) {
+    return (
+      <Sidebar className="w-64">
+        <div className="p-4 border-b">
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg">
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">DevAudit AI</h2>
+              <p className="text-xs text-muted-foreground">Audit de code intelligent</p>
+            </div>
+          </div>
+        </div>
+        <SidebarContent>
+          <div className="p-4 text-center text-muted-foreground">
+            Chargement...
+          </div>
+        </SidebarContent>
+      </Sidebar>
+    )
+  }
 
   return (
     <Sidebar className="w-64">
