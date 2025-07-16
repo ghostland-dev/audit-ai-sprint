@@ -9,10 +9,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/hooks/use-toast"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
+import { useAuditStore } from "@/stores/auditStore"
 
 export default function NewAuditPage() {
   const navigate = useNavigate()
+  const { createAudit, isLoading } = useAuditStore()
   const [formData, setFormData] = useState({
     projectName: "",
     repository: "",
@@ -21,10 +23,15 @@ export default function NewAuditPage() {
     description: ""
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateGitRepository = (url: string): boolean => {
+    const gitRegex = /^https?:\/\/(github\.com|gitlab\.com|bitbucket\.org)\/[\w.-]+\/[\w.-]+(?:\.git)?$/
+    return gitRegex.test(url)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.projectName || !formData.repository) {
+    if (!formData.projectName || !formData.repository || !formData.auditType) {
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs obligatoires",
@@ -33,14 +40,32 @@ export default function NewAuditPage() {
       return
     }
 
-    // Simuler la création de l'audit
-    toast({
-      title: "Audit créé",
-      description: "Le nouvel audit a été lancé avec succès"
-    })
+    if (!validateGitRepository(formData.repository)) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez entrer une URL de dépôt Git valide (GitHub, GitLab, ou Bitbucket)",
+        variant: "destructive"
+      })
+      return
+    }
 
-    // Rediriger vers la page des audits
-    navigate("/audits")
+    try {
+      const auditId = await createAudit(formData)
+      
+      toast({
+        title: "Audit créé",
+        description: "Le nouvel audit a été lancé avec succès"
+      })
+
+      // Rediriger vers la page de détails de l'audit
+      navigate(`/audits/${auditId}`)
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer l'audit. Veuillez réessayer.",
+        variant: "destructive"
+      })
+    }
   }
 
   return (
@@ -51,6 +76,7 @@ export default function NewAuditPage() {
             variant="outline" 
             size="icon"
             onClick={() => navigate(-1)}
+            disabled={isLoading}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -79,11 +105,18 @@ export default function NewAuditPage() {
                     value={formData.projectName}
                     onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
                     placeholder="Mon projet"
+                    disabled={isLoading}
+                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="auditType">Type d'audit</Label>
-                  <Select value={formData.auditType} onValueChange={(value) => setFormData({ ...formData, auditType: value })}>
+                  <Label htmlFor="auditType">Type d'audit *</Label>
+                  <Select 
+                    value={formData.auditType} 
+                    onValueChange={(value) => setFormData({ ...formData, auditType: value })}
+                    disabled={isLoading}
+                    required
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner un type" />
                     </SelectTrigger>
@@ -104,7 +137,12 @@ export default function NewAuditPage() {
                   value={formData.repository}
                   onChange={(e) => setFormData({ ...formData, repository: e.target.value })}
                   placeholder="https://github.com/user/repo"
+                  disabled={isLoading}
+                  required
                 />
+                <p className="text-xs text-muted-foreground">
+                  Formats acceptés : GitHub, GitLab, Bitbucket
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -114,6 +152,7 @@ export default function NewAuditPage() {
                   value={formData.branch}
                   onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
                   placeholder="main"
+                  disabled={isLoading}
                 />
               </div>
 
@@ -125,17 +164,30 @@ export default function NewAuditPage() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Description de l'audit..."
                   rows={3}
+                  disabled={isLoading}
                 />
               </div>
 
               <div className="flex space-x-2 pt-4">
-                <Button type="submit" className="flex-1">
-                  Lancer l'audit
+                <Button 
+                  type="submit" 
+                  className="flex-1"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Création en cours...
+                    </>
+                  ) : (
+                    "Lancer l'audit"
+                  )}
                 </Button>
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={() => navigate(-1)}
+                  disabled={isLoading}
                 >
                   Annuler
                 </Button>
