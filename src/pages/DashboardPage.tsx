@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { StatsGrid } from "@/components/dashboard/StatsGrid"
 import { RecentAudits } from "@/components/dashboard/RecentAudits"
 import { QuickActions } from "@/components/dashboard/QuickActions"
+import { useNavigate } from "react-router-dom"
 import { 
   Shield, 
   GitBranch, 
@@ -13,6 +14,8 @@ import {
 } from "lucide-react"
 
 export default function DashboardPage() {
+  const navigate = useNavigate()
+
   const stats = [
     {
       title: "Projets actifs",
@@ -79,7 +82,10 @@ export default function DashboardPage() {
               Vue d'ensemble de vos audits de code
             </p>
           </div>
-          <Button className="gradient-primary text-white">
+          <Button 
+            className="gradient-primary text-white"
+            onClick={() => navigate("/audits/new")}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Nouvel audit
           </Button>
